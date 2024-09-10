@@ -1,32 +1,58 @@
-const express = require("express")
+const express = require("express");
 const axios = require("axios");
-require("dotenv").config()
-const app = express()
-const port = process.env.PORT || 3000
+require("dotenv").config();
+const app = express();
+const port = process.env.PORT || 5555;
+
+const dnsRecords = process.env.CF_DNS.split(',');
 
 app.get("/", async (req, res) => {
-    const response = await axios(`https://api.ipapi.is`)
-    console.log(response.data.ip)
-    const ip = response.data.ip
+    try {
+        const response = await axios(`https://api.ipapi.is`);
+        const ip = response.data.ip;
 
-    const update = await axios.put(`https://api.cloudflare.com/client/v4/zones/${process.env.CF_ZONE}/dns_records/${process.env.CF_DNS}`,  {
-        "type": "A",
-            "name": "rahul",
-            "content": ip,
-            "ttl": 1,
-            "proxied": true
-    }, {
-        headers: {
-            "X-Auth-Email" : process.env.CF_MAIL,
-            "Authorization" : `Bearer ${process.env.CF_AUTH}`
-        }
-    })
-    console.log(update.data)
+        const updateResults = await Promise.all(
+            dnsRecords.map(async (dnsRecord) => {
+                const currentRecord = await axios.get(
+                    `https://api.cloudflare.com/client/v4/zones/${process.env.CF_ZONE}/dns_records/${dnsRecord}`,
+                    {
+                        headers: {
+                            "X-Auth-Email": process.env.CF_MAIL,
+                            Authorization: `Bearer ${process.env.CF_AUTH}`,
+                        },
+                    }
+                );
 
-    res.send( (update.status == 200) ? "success" : "chud gaye guru")
-    // res.send(response.data.ip)
-})
+                const recordData = currentRecord.data.result;
 
+                const update = await axios.put(
+                    `https://api.cloudflare.com/client/v4/zones/${process.env.CF_ZONE}/dns_records/${dnsRecord}`,
+                    {
+                        type: recordData.type,  // Keep the same record type (e.g., "A" record)
+                        name: recordData.name,  // Keep the same name
+                        content: ip,           // Update only the IP address
+                        ttl: recordData.ttl,   // Keep the same TTL
+                        proxied: recordData.proxied, // Keep the proxy setting
+                    },
+                    {
+                        headers: {
+                            "X-Auth-Email": process.env.CF_MAIL,
+                            Authorization: `Bearer ${process.env.CF_AUTH}`,
+                        },
+                    }
+                );
+                return update;
+            })
+        );
 
-app.listen(3000)
+        const success = updateResults.every((update) => update.status === 200);
+        res.send(success ? "success" : "chud gaye guru");
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("An error occurred");
+    }
+});
 
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+});
