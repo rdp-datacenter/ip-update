@@ -1,6 +1,6 @@
-# Cloudflare DNS Updater
+# Cloudflare Dynamic DNS Updater
 
-This is a simple Express.js application that updates DNS records on Cloudflare with the current public IP address of the server. It uses the Cloudflare API to perform the updates and requires an API key for access control.
+This is a simple Express.js application that dynamically updates DNS records on Cloudflare with the current public IP address of the server. It uses the Cloudflare API to perform the updates and requires an API key for access control.
 
 ## Features
 
