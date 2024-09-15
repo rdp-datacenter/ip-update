@@ -8,7 +8,7 @@ const dnsRecords = process.env.CF_DNS.split(',');
 
 app.get("/", async (req, res) => {
     try {
-        const response = await axios(`https://api.ipapi.is`);
+        const response = await axios(`https://api.ipify.org?format=json`);
         const ip = response.data.ip;
 
         const updateResults = await Promise.all(
