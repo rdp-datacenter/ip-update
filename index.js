@@ -46,10 +46,10 @@ app.get("/", async (req, res) => {
         );
 
         const success = updateResults.every((update) => update.status === 200);
-        res.send(success ? "success" : "chud gaye guru");
+        res.send(`<style>body{background-color: #000;color: #ffffff;}</style>${success ? "success" : "chud gaye guru"}`);
     } catch (error) {
         console.error(error);
-        res.status(500).send("An error occurred");
+        res.status(500).send(`<style>body{background-color: #000;color: #ffffff;}</style>An error occurred`);
     }
 });
 
