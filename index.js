@@ -6,6 +6,22 @@ const port = process.env.PORT || 5555;
 
 const dnsRecords = process.env.CF_DNS.split(',');
 
+// Middleware to check the API key
+app.use((req, res, next) => {
+    const apiKey = req.header("rdp-key") || req.query.api_key;
+
+    if (!apiKey) {
+        // No API key provided
+        res.status(400).json({ status: "failed", message: "Missing api_key or rdp-key Header" });
+    } else if (apiKey !== process.env.RDP_API_KEY) {
+        // API key is provided but is incorrect
+        res.status(401).json({ status: "failed", message: "Invalid API Key" });
+    } else {
+        // API key is correct, proceed to the route
+        next();
+    }
+});
+
 app.get("/", async (req, res) => {
     try {
         const response = await axios(`https://api.ipify.org?format=json`);
