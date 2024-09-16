@@ -65,7 +65,7 @@ app.get("/", async (req, res) => {
         res.json({ status: success ? "success" : "failed" });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ status: "failed", error: "An error occurred, Check Logs" });
+        res.status(500).json({ status: "fail", error: "An error occurred, Check Logs" });
     }
 });
 
