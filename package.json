@@ -1,13 +1,39 @@
 {
-  "name": "ip-update",
+  "name": "cloudflare-dyndns-updater",
   "version": "1.0.0",
+  "description": "A TypeScript Express application that dynamically updates DNS records on Cloudflare with the current public IP address",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "dev": "nodemon --watch src --exec ts-node src/index.ts",
     "build": "rimraf dist && tsc",
     "start": "node dist/index.js",
-    "vercel-build": "tsc"
+    "vercel-build": "tsc",
+    "prepublishOnly": "npm run build"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rdp-datacenter/ip-update.git"
+  },
+  "keywords": [
+    "cloudflare",
+    "dns",
+    "dynamic-dns",
+    "ipv4",
+    "ddns",
+    "updater"
+  ],
+  "author": "RDP Datacenter <noc@rdpdatacenter.in>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rdp-datacenter/ip-update/issues"
+  },
+  "homepage": "https://github.com/rdp-datacenter/ip-update#readme",
   "dependencies": {
     "axios": "^1.5.0",
     "dotenv": "^16.0.3",

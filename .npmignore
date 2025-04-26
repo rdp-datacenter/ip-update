@@ -1,0 +1,34 @@
+# Source code
+src/
+
+# Config files
+.dockerignore
+.gitignore
+docker-compose.yml
+Dockerfile
+tsconfig.json
+vercel.json
+
+# Development files
+nodemon.json
+.env
+.env.*
+env.example
+
+# Git
+.git
+.github
+
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+
+# Misc
+.DS_Store
+Thumbs.db

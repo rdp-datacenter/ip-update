@@ -224,12 +224,19 @@ app.use((req: Request, res: Response) => {
     });
 });
 
-// Start the server
-if (process.env.NODE_ENV !== 'test') {
+// Start the server only if directly executed, not if imported as a module
+if (require.main === module) {
     app.listen(port, () => {
         console.log(`Server running on port ${port}`);
         console.log(`Configured to update ${dnsRecords.length} DNS records`);
     });
 }
+
+// Export for both server usage and importing as a module
+export { 
+    app,
+    apiKeyMiddleware,
+    generateRdpId
+};
 
 export default app;

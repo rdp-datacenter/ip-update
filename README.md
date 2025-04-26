@@ -11,6 +11,33 @@ This is a TypeScript Express application that dynamically updates DNS records on
 - Provides human-friendly JSON responses with automatic pretty-printing
 - Clear separation between public and protected endpoints
 
+## Installation
+
+### Using npm
+
+```bash
+npm install cloudflare-dyndns-updater
+```
+
+### From GitHub
+
+1. Clone the repository:
+    ```bash
+    git clone https://github.com/rdp-datacenter/ip-update.git
+    ```
+2. Navigate to the project directory:
+    ```bash
+    cd ip-update
+    ```
+3. Install dependencies:
+    ```bash
+    npm install
+    ```
+4. Build the TypeScript files:
+    ```bash
+    npm run build
+    ```
+
 ## Getting Started
 
 ### Prerequisites
@@ -41,26 +68,9 @@ CF_AUTH=your_cloudflare_auth_token
 PORT=3000
 ```
 
-## Installation
-
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/rdp-datacenter/ip-update.git
-    ```
-2. Navigate to the project directory:
-    ```bash
-    cd ip-update
-    ```
-3. Install dependencies:
-    ```bash
-    npm install
-    ```
-4. Build the TypeScript files:
-    ```bash
-    npm run build
-    ```
-
 ## Usage
+
+### As a standalone application
 
 1. Start the server:
     ```bash
@@ -78,6 +88,20 @@ PORT=3000
     ```bash
     curl -X GET -H "rdp-key: <your-secure-api-key>" http://localhost:5555/update
     ```
+
+### As a module in your Node.js project
+
+```javascript
+const { app } = require('cloudflare-dyndns-updater');
+// Or with ES Modules
+// import { app } from 'cloudflare-dyndns-updater';
+
+// You can now use the Express app instance
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`DNS updater running on port ${port}`);
+});
+```
 
 ## API Endpoints
 
@@ -220,6 +244,10 @@ This project is also configured for deployment on Vercel. The `vercel.json` file
 ## Contributing
 
 Feel free to submit issues, feature requests, or pull requests. Contributions are welcome!
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Contact
 
