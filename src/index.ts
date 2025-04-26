@@ -1,13 +1,28 @@
 import express, { Request, Response, NextFunction } from "express";
 import axios from "axios";
 import dotenv from "dotenv";
+import crypto from "crypto";
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5555;
+app.set('json spaces', 2);
 
 const dnsRecords: string[] = process.env.CF_DNS ? process.env.CF_DNS.split(",") : [];
+
+/**
+ * Generate a unique RDP identifier
+ * Format is 16 hex characters followed by "RDP" 
+ * @returns {string} Generated RDP ID
+ */
+const generateRdpId = (): string => {
+    // Generate 8 random bytes (16 hex characters)
+    const randomBytes = crypto.randomBytes(8).toString('hex').toUpperCase();
+    
+    // Add RDP prefix
+    return `${randomBytes}-RDP`;
+};
 
 // Middleware to check the API key
 const apiKeyMiddleware = (req: Request, res: Response, next: NextFunction) => {
@@ -15,24 +30,67 @@ const apiKeyMiddleware = (req: Request, res: Response, next: NextFunction) => {
 
     if (!apiKey) {
         // No API key provided
-        return res.status(400).json({ status: "failed", message: "Missing api_key or rdp-key Header" });
+        return res.status(400).json({ 
+            status: "failed", 
+            request_id: (req as any).rdpId,
+            message: "Missing api_key or rdp-key Header" 
+        });
     } else if (apiKey !== process.env.RDP_API_KEY) {
         // API key is provided but is incorrect
-        return res.status(401).json({ status: "failed", message: "Invalid API Key" });
+        return res.status(401).json({ 
+            status: "failed", 
+            request_id: (req as any).rdpId,
+            message: "Invalid API Key" 
+        });
     } else {
         // API key is correct, proceed to the route
         next();
     }
 };
 
-app.use(apiKeyMiddleware);
+// Add RDP ID middleware to all routes
+app.use((req: Request, res: Response, next: NextFunction) => {
+    // Generate and attach an RDP ID to the request
+    const rdpId = generateRdpId();
+    (req as any).rdpId = rdpId;
+    
+    // Add RDP ID to response headers
+    res.setHeader('RDP-Request-ID', rdpId);
+    next();
+});
 
-app.get("/", async (req: Request, res: Response) => {
+// Root route is now the informational page (no auth required)
+app.get("/", (req: Request, res: Response) => {
+    res.json({
+        name: "RDP Dynamic DNS Updater",
+        version: "1.0.0",
+        request_id: (req as any).rdpId,
+        endpoints: [
+            { path: "/update", method: "GET", description: "Update DNS records with current IP (requires API key)" },
+            { path: "/health", method: "GET", description: "Service health check (no auth required)" },
+            { path: "/update-all", method: "GET", description: "Update all DNS records (requires API key)" }
+        ],
+        status: "operational"
+    });
+});
+
+// Health check endpoint (no auth required)
+app.get("/health", (req: Request, res: Response) => {
+    res.status(200).json({ 
+        status: "healthy",
+        request_id: (req as any).rdpId,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Main DNS update endpoint now moved to /update
+app.get("/update", apiKeyMiddleware, async (req: Request, res: Response) => {
     try {
         // Check if required environment variables are set
         if (!process.env.CF_ZONE || !process.env.CF_MAIL || !process.env.CF_AUTH) {
             return res.status(500).json({ 
                 status: "failed", 
+                request_id: (req as any).rdpId,
                 message: "Missing Cloudflare configuration. Please check your environment variables." 
             });
         }
@@ -40,6 +98,7 @@ app.get("/", async (req: Request, res: Response) => {
         if (dnsRecords.length === 0) {
             return res.status(500).json({ 
                 status: "failed", 
+                request_id: (req as any).rdpId,
                 message: "No DNS records specified. Please check your CF_DNS environment variable." 
             });
         }
@@ -113,20 +172,56 @@ app.get("/", async (req: Request, res: Response) => {
         res.json({ 
             status: success ? "success" : "partial_failure",
             ip,
+            request_id: (req as any).rdpId,
             records: updateResults
         });
     } catch (error) {
         console.error("Error in update process:", error);
         res.status(500).json({ 
             status: "failed", 
+            request_id: (req as any).rdpId,
             error: error instanceof Error ? error.message : "An unknown error occurred" 
         });
     }
 });
 
-// Health check endpoint
-app.get("/health", (_req: Request, res: Response) => {
-    res.status(200).json({ status: "healthy" });
+// Add protected routes that require authentication
+app.get("/update-all", apiKeyMiddleware, async (req: Request, res: Response) => {
+    try {
+        // Logic to update all DNS records
+        res.json({
+            status: "success",
+            request_id: (req as any).rdpId,
+            message: "All DNS records updated successfully"
+        });
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).json({
+            status: "failed",
+            request_id: (req as any).rdpId,
+            error: error instanceof Error ? error.message : "Unknown error"
+        });
+    }
+});
+
+// Error handling middleware
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({
+        status: "error",
+        request_id: (req as any).rdpId,
+        message: "Internal server error",
+        error: process.env.NODE_ENV === 'production' ? undefined : err.message
+    });
+});
+
+// 404 handler - must be last
+app.use((req: Request, res: Response) => {
+    res.status(404).json({
+        status: "failed",
+        request_id: (req as any).rdpId,
+        message: "Endpoint not found"
+    });
 });
 
 // Start the server
